@@ -1,11 +1,11 @@
-var success=[[1, 2, 3],
-    [4, 5, 6],
-    [7, 8, 9],
+var success=[[0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
     [1, 4, 7],
     [2, 5, 8],
-    [3, 6, 9],
-    [1, 5, 9],
-    [7, 5, 3]];  //winner mode
+    [0, 4, 8],
+    [6, 4, 2] ];  //winner mode
   
 
 function checkSuccess(xpath,opath){
@@ -78,17 +78,39 @@ $(document).ready(function(){
   var buttonDraw;  //after choose  X/O, draw the particular pattern
   var canvasWidth=250;
   var canvasHeigh=250;
-  var leftPosition=[1,2,3,4,5,6,7,8,9];
+  
+  var positions=[];   //store the exact location to draw patterns
+  
+
+  
+  var leftPosition=[0,1,2,3,4,5,6,7,8];
 
   var canvas = document.getElementById("canvas");
   canvas.width=canvasWidth;
   canvas.height=canvasHeigh;
   var ctx = canvas.getContext("2d");
+  
   console.log("canvas offset top:"+canvas.offsetTop+" offsetLeft:"+canvas.offsetLeft);
   //console.log("checksuccess opath:"+checkSuccess(success,[3,5,7],[1,3,6]));
   //console.log("checksuccess opath:"+checkSuccess(success,[3,5,7],[2,2,3]));
   canvasIniial(ctx,canvasWidth,canvasHeigh);
-  
+  var offsetTop=canvas.offsetTop;
+var offsetLeft=canvas.offsetLeft;
+
+    for(var i=0;i<9;i++){  //push each block location
+    positions.push({
+      topX:i%3*(canvasWidth/3)+offsetLeft,
+      topY:Math.floor(i/3)*(canvasHeigh/3)+offsetTop,
+      middleY:Math.floor(i/3)*(canvasHeigh/3)+offsetTop+canvasHeigh/6,
+      middleX:i%3*(canvasWidth/3)+offsetLeft+canvasWidth/6,
+      locations:i
+    });
+  }  
+
+  positions.forEach(function(val){
+  console.log("positions: "+val.locations+"; middleX: "+val.middleX+" middleY:"+val.middleY+"; topX:"+val.topX+" topY:"+val.topY );
+});
+
   $("#choose-buttonX").on("click",function(){
     buttonDraw=document.getElementById("choose-buttonX").value;
    console.log(buttonDraw);
@@ -103,9 +125,7 @@ $(document).ready(function(){
     drawPiece(ctx,0,0,leftPosition[getRandomInt(0,leftPosition.length)]);
   });
   
-  
-  
-  
+
   $("#canvas").on("click",function(event){
     var AIScore=[];
     
@@ -113,7 +133,6 @@ $(document).ready(function(){
     console.log("X DRAWED, O TURN");
     if(opath.length===0) drawPiece(ctx,0,0,leftPosition[getRandomInt(0,leftPosition.length)]);
     else {
-      // leftPosition.forEach(function(curr)
       for(var i=0;i<leftPosition.length;i++)
       {  //loop for each left position to calcualte score of each step
         console.log("leftPosition:"+leftPosition+" opath:"+opath+" xpath:"+xpath);
@@ -123,7 +142,7 @@ $(document).ready(function(){
         leftPos.splice(leftPos.indexOf(leftPosition[i]),1);    
         AIScore.push(minimax(leftPos,oopath,xpath,"min"));
         //if(AIScore[AIScore.length-1]==10) break;
-      }//);
+      }
     console.log("AIScore:"+AIScore);
     var max = AIScore.reduce(function(a, b) {   //get max score 
         return Math.max(a, b);
@@ -145,20 +164,22 @@ function canvasIniial(context,canvasWidth,canvasHeigh){
   
   xpath=[];    //X put
   opath=[];    //O put
-  turnFlag=getRandomInt(0,1);   //1: X turn; 0: O turn
+  turnFlag=getRandomInt(0,2);   //1: Player1 turn; 0: AI turn
+  
+  console.log("Turn Flag:"+turnFlag);
   
   //draw the line
   context.moveTo(8,canvasHeigh/3);
   context.lineTo(canvasWidth-8,canvasHeigh/3);
-  context.stroke();
+  //context.stroke();
 
   context.moveTo(8,canvasHeigh/3*2);
   context.lineTo(canvasWidth-8,canvasHeigh/3*2);
-  context.stroke();
+  //context.stroke();
 
   context.moveTo(canvasWidth/3,8);
   context.lineTo(canvasWidth/3,canvasHeigh-8);
-  context.stroke();
+  //context.stroke();
 
   context.moveTo(canvasWidth/3*2,8);
   context.lineTo(canvasWidth/3*2,canvasHeigh-8);
@@ -166,40 +187,29 @@ function canvasIniial(context,canvasWidth,canvasHeigh){
 
 }
   
+
+  
+  
 function drawPiece(context, mouseX,mouseY,loc){
   var x=0;
   var y=0;
   var location=0;
+  console.log("mouseX: "+mouseX+" mouseY:"+mouseY);
   
-  //first row
-  if((mouseX>0 & mouseX < canvasWidth/3 & mouseY>0 & mouseY<canvasHeigh/3+50) || loc==1)
-  {x=canvasWidth/6;y=canvasHeigh/6+50;location=1;}
-  
-  if(mouseX>canvasWidth/3 & mouseX < canvasWidth/3*2 & mouseY>0 & mouseY<canvasHeigh/3+50 || loc==2)
-  {x=canvasWidth/2;y=canvasHeigh/6+50;location=2;}
-  
-  if(mouseX>canvasWidth/3*2 & mouseX < canvasWidth & mouseY>0 & mouseY<canvasHeigh/3+50 || loc==3 )
-  {x=canvasWidth/6*5;y=canvasHeigh/6+50;location=3;}
-  
-  //second row
-  if(mouseX>0 & mouseX <canvasWidth/3 & mouseY>canvasHeigh/3+50 & mouseY<canvasHeigh/3*2+50 || loc==4)
-  {x=canvasWidth/6;y=canvasHeigh/2+50;location=4;}
-  
-  if((mouseX>canvasWidth/3 & mouseX < canvasWidth/3*2 & mouseY>canvasHeigh/3+50 & mouseY<canvasHeigh/3*2+50) || loc==5)
-  {x=canvasWidth/2;y=canvasHeigh/2+50;location=5;}
-  
-  if(mouseX>canvasWidth/3*2 & mouseX < canvasWidth & mouseY>canvasHeigh/3+50 & mouseY<canvasHeigh/3*2+50 || loc==6)
-  {x=canvasWidth/6*5;y=canvasHeigh/2+50;location=6;}
-  
-  //third row
-  if(mouseX>0 & mouseX <canvasWidth/3 & mouseY>canvasHeigh/3*2+50 & mouseY<canvasHeigh+50  || loc==7)
-  {x=canvasWidth/6;y=canvasHeigh/6*5+50;location=7;}
-  
-  if(mouseX>canvasWidth/3 & mouseX < canvasWidth/3*2 & mouseY>canvasHeigh/3*2+50 & mouseY<canvasHeigh+50  || loc==8)
-  {x=canvasWidth/2;y=canvasHeigh/6*5+50;location=8;}
-  
-  if(mouseX>canvasWidth/3*2 & mouseX < canvasWidth & mouseY>canvasHeigh/3*2+50 & mouseY<canvasHeigh+50  || loc==9)
-  {x=canvasWidth/6*5;y=canvasHeigh/6*5+50;location=9;}
+  if(mouseX>0 & mouseY>0) {
+    for(var i=0;i<positions.length;i++){
+      if(mouseX>positions[i].topX & mouseX<positions[i].topX+canvasWidth/3 & 
+      mouseY>positions[i].topY & mouseY<positions[i].topY+canvasHeigh/3){
+        location=positions[i].locations;
+        x=positions[i].middleX-20;
+        y=positions[i].middleY-30;
+      }
+    }
+  } else {  //For AI move
+    location=loc;
+    x=positions[loc].middleX-20;
+    y=positions[loc].middleY-30;
+  }
   
   console.log(x+';'+y);
   
@@ -209,15 +219,15 @@ function drawPiece(context, mouseX,mouseY,loc){
   console.log("location"+location);
   if(xpath.indexOf(location)==-1 & opath.indexOf(location)==-1) {
     if(turnFlag==1) {   //change the turn to draw X or O
-      context.strokeText(buttonDraw,x-17,y-30);
+      context.strokeText(buttonDraw,x,y);
       turnFlag=0;
       xpath.push(location);
     }
     else if(turnFlag===0){
       if(buttonDraw=='X')
-        context.strokeText("O",x-20,y-30);
+        context.strokeText("O",x,y);
       else
-        context.strokeText("X",x-20,y-30);
+        context.strokeText("X",x,y);
       turnFlag=1;
       opath.push(location);
     }
