@@ -10,6 +10,7 @@ var success=[[0, 1, 2],
 
 function checkSuccess(xpath,opath){
   var succ=0;
+   console.log("check success;opath: "+opath+" xpath:"+xpath);
   for(var i=0;i<success.length;i++){   //loop to check if any path have pattern match success pattern
     for(var j=0;j<success[i].length;j++){
       if(xpath.indexOf(success[i][j])==-1) {  //X win if any success pattern can match
@@ -78,12 +79,11 @@ $(document).ready(function(){
   var buttonDraw;  //after choose  X/O, draw the particular pattern
   var canvasWidth=250;
   var canvasHeigh=250;
-  
+  var pointA=0;   //user point
+  var pointAI=0;  //AI point
   var positions=[];   //store the exact location to draw patterns
-  
 
-  
-  var leftPosition=[0,1,2,3,4,5,6,7,8];
+  var leftPosition=[];
 
   var canvas = document.getElementById("canvas");
   canvas.width=canvasWidth;
@@ -91,133 +91,140 @@ $(document).ready(function(){
   var ctx = canvas.getContext("2d");
   
   console.log("canvas offset top:"+canvas.offsetTop+" offsetLeft:"+canvas.offsetLeft);
-  //console.log("checksuccess opath:"+checkSuccess(success,[3,5,7],[1,3,6]));
-  //console.log("checksuccess opath:"+checkSuccess(success,[3,5,7],[2,2,3]));
+  
   canvasIniial(ctx,canvasWidth,canvasHeigh);
   var offsetTop=canvas.offsetTop;
-var offsetLeft=canvas.offsetLeft;
+  var offsetLeft=canvas.offsetLeft;
 
-    for(var i=0;i<9;i++){  //push each block location
+  for(var i=0;i<9;i++){  //push each block location
     positions.push({
       topX:i%3*(canvasWidth/3)+offsetLeft,
       topY:Math.floor(i/3)*(canvasHeigh/3)+offsetTop,
-      middleY:Math.floor(i/3)*(canvasHeigh/3)+offsetTop+canvasHeigh/6,
-      middleX:i%3*(canvasWidth/3)+offsetLeft+canvasWidth/6,
+      middleY:Math.floor(i/3)*(canvasHeigh/3)+canvasHeigh/6,  //when draw pattern no need to add offset
+      middleX:i%3*(canvasWidth/3)+canvasWidth/6,
       locations:i
     });
   }  
-
+  
   positions.forEach(function(val){
-  console.log("positions: "+val.locations+"; middleX: "+val.middleX+" middleY:"+val.middleY+"; topX:"+val.topX+" topY:"+val.topY );
-});
+    console.log("positions: "+val.locations+"; middleX: "+val.middleX+" middleY:"+val.middleY+"; topX:"+val.topX+" topY:"+val.topY );
+  });
 
   $("#choose-buttonX").on("click",function(){
     buttonDraw=document.getElementById("choose-buttonX").value;
-   console.log(buttonDraw);
-   if(turnFlag===0)  
-    drawPiece(ctx,0,0,leftPosition[getRandomInt(0,leftPosition.length)]);
+    console.log(buttonDraw);
+    if(turnFlag===0)  
+      drawPiece(ctx,leftPosition[getRandomInt(0,leftPosition.length)]);
   });
 
   $("#choose-buttonO").on("click",function(){
     buttonDraw=document.getElementById("choose-buttonO").value;
    console.log(buttonDraw);
    if(turnFlag===0)  
-    drawPiece(ctx,0,0,leftPosition[getRandomInt(0,leftPosition.length)]);
+    drawPiece(ctx,leftPosition[getRandomInt(0,leftPosition.length)]);
   });
   
 
   $("#canvas").on("click",function(event){
     var AIScore=[];
     
-    drawPiece(ctx,event.pageX,event.pageY,0);
-    console.log("X DRAWED, O TURN");
-    if(opath.length===0) drawPiece(ctx,0,0,leftPosition[getRandomInt(0,leftPosition.length)]);
-    else {
-      for(var i=0;i<leftPosition.length;i++)
-      {  //loop for each left position to calcualte score of each step
-        console.log("leftPosition:"+leftPosition+" opath:"+opath+" xpath:"+xpath);
-        var leftPos=leftPosition.slice();
-        var oopath=opath.slice();
-        oopath.push(leftPosition[i]);
-        leftPos.splice(leftPos.indexOf(leftPosition[i]),1);    
-        AIScore.push(minimax(leftPos,oopath,xpath,"min"));
-        //if(AIScore[AIScore.length-1]==10) break;
+    var mouseX=event.pageX;
+    var mouseY=event.pageY;
+    var location=-1;
+    console.log("mouseX: "+mouseX+" mouseY:"+mouseY);
+    if(mouseX>0 & mouseY>0) {
+      for(var loc=0;loc<positions.length;loc++){
+        if(mouseX>positions[loc].topX & mouseX<positions[loc].topX+canvasWidth/3 & 
+        mouseY>positions[loc].topY & mouseY<positions[loc].topY+canvasHeigh/3)
+          location=positions[loc].locations;  //get location of clicked point
       }
-    console.log("AIScore:"+AIScore);
-    var max = AIScore.reduce(function(a, b) {   //get max score 
-        return Math.max(a, b);
-    });
+    } 
     
-    console.log("best score pos:"+leftPosition[AIScore.indexOf(max)]);
-    drawPiece(ctx,0,0,leftPosition[AIScore.indexOf(max)]);
-
-    }
+    if(xpath.indexOf(location)==-1 & opath.indexOf(location)==-1){  //if location not filled yet, then draw the pattern
+      drawPiece(ctx,location);
+      
+      console.log("X DRAWED, O TURN");
+      if(checkResult()){
+        if(opath.length===0) drawPiece(ctx,leftPosition[getRandomInt(0,leftPosition.length)]);
+        else {
+          for(var i=0;i<leftPosition.length;i++)
+          {  //loop for each left position to calcualte score of each step
+            console.log("leftPosition:"+leftPosition+" opath:"+opath+" xpath:"+xpath);
+            var leftPos=leftPosition.slice();
+            var oopath=opath.slice();
+            oopath.push(leftPosition[i]);
+            leftPos.splice(leftPos.indexOf(leftPosition[i]),1);    
+            AIScore.push(minimax(leftPos,oopath,xpath,"min"));
+            //if(AIScore[AIScore.length-1]==10) break;
+          }
+        console.log("AIScore:"+AIScore);
+        var max = AIScore.reduce(function(a, b) {   //get max score 
+            return Math.max(a, b);
+        });
+        
+        console.log("best score pos:"+leftPosition[AIScore.indexOf(max)]);
+        drawPiece(ctx,leftPosition[AIScore.indexOf(max)]);
+        checkResult();
+        }
+      }
+    }//if clicked location not filled yet
   });
   
   $( "#canvas" ).on( "mousemove", function( event ) {
     $( "#log" ).text( "pageX: " + event.pageX + ", pageY: " + event.pageY );
   });
   
-function canvasIniial(context,canvasWidth,canvasHeigh){
-  context.clearRect(0, 0, canvasWidth, canvasHeigh);
+  function canvasIniial(context,canvasWidth,canvasHeigh){
+    context.clearRect(0, 0, canvasWidth, canvasHeigh);
+    
+    xpath=[];    //X put
+    opath=[];    //O put
+    turnFlag=getRandomInt(0,2);   //1: Player1 turn; 0: AI turn
+    leftPosition=[0,1,2,3,4,5,6,7,8];
+    
+    console.log("Turn Flag:"+turnFlag);
+    
+    //draw the line
+    context.moveTo(8,canvasHeigh/3);
+    context.lineTo(canvasWidth-8,canvasHeigh/3);
+    //context.stroke();
 
-  
-  xpath=[];    //X put
-  opath=[];    //O put
-  turnFlag=getRandomInt(0,2);   //1: Player1 turn; 0: AI turn
-  
-  console.log("Turn Flag:"+turnFlag);
-  
-  //draw the line
-  context.moveTo(8,canvasHeigh/3);
-  context.lineTo(canvasWidth-8,canvasHeigh/3);
-  //context.stroke();
+    context.moveTo(8,canvasHeigh/3*2);
+    context.lineTo(canvasWidth-8,canvasHeigh/3*2);
+    //context.stroke();
 
-  context.moveTo(8,canvasHeigh/3*2);
-  context.lineTo(canvasWidth-8,canvasHeigh/3*2);
-  //context.stroke();
+    context.moveTo(canvasWidth/3,8);
+    context.lineTo(canvasWidth/3,canvasHeigh-8);
+    //context.stroke();
 
-  context.moveTo(canvasWidth/3,8);
-  context.lineTo(canvasWidth/3,canvasHeigh-8);
-  //context.stroke();
-
-  context.moveTo(canvasWidth/3*2,8);
-  context.lineTo(canvasWidth/3*2,canvasHeigh-8);
-  context.stroke();
-
-}
-  
-
-  
-  
-function drawPiece(context, mouseX,mouseY,loc){
-  var x=0;
-  var y=0;
-  var location=0;
-  console.log("mouseX: "+mouseX+" mouseY:"+mouseY);
-  
-  if(mouseX>0 & mouseY>0) {
-    for(var i=0;i<positions.length;i++){
-      if(mouseX>positions[i].topX & mouseX<positions[i].topX+canvasWidth/3 & 
-      mouseY>positions[i].topY & mouseY<positions[i].topY+canvasHeigh/3){
-        location=positions[i].locations;
-        x=positions[i].middleX-20;
-        y=positions[i].middleY-30;
-      }
-    }
-  } else {  //For AI move
-    location=loc;
-    x=positions[loc].middleX-20;
-    y=positions[loc].middleY-30;
+    context.moveTo(canvasWidth/3*2,8);
+    context.lineTo(canvasWidth/3*2,canvasHeigh-8);
+    context.stroke();
+    
+    console.log("buttonDraw after init:"+buttonDraw);
+    
+    if(buttonDraw!==undefined & turnFlag===0)
+      drawPiece(ctx,4);
+      
+    $( "#pointA" ).text(pointA);
+    $( "#pointAI" ).text(pointAI);
   }
-  
-  console.log(x+';'+y);
-  
-  leftPosition.splice(leftPosition.indexOf(location),1); //remove exist postion from left Position
-  
-  context.font="50px Arial";
-  console.log("location"+location);
-  if(xpath.indexOf(location)==-1 & opath.indexOf(location)==-1) {
+
+  function drawPiece(context,loc){
+    var x=0;
+    var y=0;
+    var location=loc;
+
+    x=positions[loc].middleX-20;
+    y=positions[loc].middleY+20;
+    
+    console.log('Draw location:'+x+';'+y);
+    
+    context.font="50px Arial";
+    console.log("location"+location);
+    
+    leftPosition.splice(leftPosition.indexOf(location),1); //remove exist postion from left Position
+   
     if(turnFlag==1) {   //change the turn to draw X or O
       context.strokeText(buttonDraw,x,y);
       turnFlag=0;
@@ -233,18 +240,32 @@ function drawPiece(context, mouseX,mouseY,loc){
     }
   }
   
-  console.log("check success;opath: "+opath+" xpath:"+xpath);
-  var succStatus=checkSuccess(xpath,opath);
-
-  showResult(leftPosition,succStatus);
-  //if(succStatus==10 || succStatus==2 || (xpath.length+opath.length>=9)) canvasIniial(ctx,canvasWidth,canvasHeigh);
-}
+  function checkResult(){
+    var succStatus=checkSuccess(xpath,opath);
+    var returnFlag=1;
+   console.log("checkresult flag:"+turnFlag+" succStatus:"+succStatus+" leftPos"+leftPosition+" returnflag:"+returnFlag);
+    
+   if(leftPosition.length===0) {
+      $( "#result" ).text("Its a Draw");
+      canvasIniial(ctx,canvasWidth,canvasHeigh);
+      returnFlag=0;
+    }
+     if(succStatus==-10) {
+      $( "#result" ).text("You Win");
+    pointA++;
+      canvasIniial(ctx,canvasWidth,canvasHeigh);
+      returnFlag=0;
+    }
+     if(succStatus==10) {
+      $( "#result" ).text("AI Win");
+      pointAI++;
+      canvasIniial(ctx,canvasWidth,canvasHeigh);
+      returnFlag=0;
+    }
+    if(turnFlag==1) {console.log("Player1 turn");$( "#result" ).text("Player1 turn"); }
+     if(turnFlag===0) {console.log("AI turn");$( "#result" ).text("AI turn");}
+    console.log("checkresult flag:"+turnFlag+" succStatus:"+succStatus+" leftPos"+leftPosition+" returnflag:"+returnFlag);
+    return returnFlag;
+  }
   
-  function showResult(lefts,succstatus){
-  if(lefts.length===0) $( "#result" ).text("Its a Draw");
-  else if(succstatus==-10) $( "#result" ).text("X Win");
-  else if(succstatus==10) $( "#result" ).text("O Win");
-  else if(turnFlag==1) $( "#result" ).text("Player1 turn");
-  else if(turnFlag===0) $( "#result" ).text("AI turn");
-}
 });
